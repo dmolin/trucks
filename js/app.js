@@ -1,91 +1,84 @@
-tash.namespace( 'test.delivery' );
-tash.events.require( 'test.events.AppInited' );
+/*jshint white: false, browser: true, devel: true, onevar: false, undef: true,
+ nomen: false, eqeqeq: true, plusplus: false, bitwise: true, regexp: true, jquery: true,
+ newcap: true, immed: true, sub: true, loopfunc: true, latedef: false, unused:false*/
+/*global tash:true, test:true */
+
+tash.namespace('test.delivery');
+tash.events.require('test.events.AppInited');
 
 /*===============================================================
  * The following namespace+functions should ideally be part of a common
  * library
  *===============================================================*/
 
-(function(){
+(function () {
 
-test.util = {
-    rand: function(min, max) {
-        return Math.floor(Math.random()*max)+min;
-    },
+    test.util = {
+        rand: function (min, max) {
+            return Math.floor(Math.random() * max) + min;
+        },
 
-    Screen: {
-        /**
-        * Microtemplating facility
-        */
-        template: function( tmpl, obj ) {
-            var i,
-                matches = tmpl.match(/\{\{(\w+)\}\}/g);
-            for( i = 0; i < matches.length; i++ ) {
-                var matched = matches[i];
-                if( matched.charAt(0) !== '{' ) {
-                    return;//in IE the global flag still return the whole string as first match
+        Screen: {
+            /**
+            * Microtemplating facility
+            */
+            template: function (tmpl, obj) {
+                var i,
+                    matches = tmpl.match(/\{\{(\w+)\}\}/g);
+                for (i = 0; i < matches.length; i++) {
+                    var matched = matches[i];
+                    if (matched.charAt(0) !== '{') {
+                        return;//in IE the global flag still return the whole string as first match
+                    }
+                    tmpl = tmpl.replace(matched, obj[matched.substr(2, matched.length - 4)] || matched);
                 }
-                tmpl = tmpl.replace( matched, obj[matched.substr(2, matched.length-4)]||matched );
+                return tmpl;
             }
-            return tmpl;
+
         }
+    };
 
-    }
-};
+    test.OO = {
+        /**
+        * Crockford's method for extending instances with inheritance
+        * expanded to support initialization from prototype argument. Mimics the same behavior as Object.create
+        * but retains compatibility with pre-ECMAScript. 5 browsers
+        * @param o  Object instance to use as prototype
+        * @param proto Additional protype to add (override functions and other additional properties)
+        * @param other params = they're passed along to the constructor function, if present
+        */
+        extend: function (o, proto) {
+            var obj,
+                supercls,
+                i;
 
-test.OO = {
-    /**
-    * Crockford's method for extending instances with inheritance
-    * expanded to support initialization from prototype argument. Mimics the same behavior as Object.create
-    * but retains compatibility with pre-ECMAScript. 5 browsers
-    * @param o  Object instance to use as prototype
-    * @param proto Additional protype to add (override functions and other additional properties)
-    * @param other params = they're passed along to the constructor function, if present
-    */
-    extend: function( o, proto ) {
-        var obj,
-            supercls,
-            i;
-
-        // define a new function
-        function F() {}
-        // set the prototype to be the object we want to inherit from
-        F.prototype = o;
-        obj = new F();
-        //add proto to the prototype, if available
-        if( proto ) {
-            for( i in proto ) {
-                if( proto.hasOwnProperty( i ) ) {
-                    if( typeof obj[i] === 'function' ) {
-                        //override. link to the parent implementation
-                        supercls = obj[i];
-                        obj[i] = proto[i];
-                        obj[i].supercls = supercls;
-                    } else {
-                        obj[i] = proto[i];
+            // define a new function
+            function F() {}
+            // set the prototype to be the object we want to inherit from
+            F.prototype = o;
+            obj = new F();
+            //add proto to the prototype, if available
+            if (proto) {
+                for (i in proto) {
+                    if (proto.hasOwnProperty(i)) {
+                        if (typeof obj[i] === 'function') {
+                            //override. link to the parent implementation
+                            supercls = obj[i];
+                            obj[i] = proto[i];
+                            obj[i].supercls = supercls;
+                        } else {
+                            obj[i] = proto[i];
+                        }
                     }
                 }
             }
-        }
 
-        if( typeof obj._constructor !== 'undefined' ) {
-            obj._constructor.apply( obj, Array.prototype.slice.call( arguments, 2 ) );
-        }
-        return obj;
-    },
-
-    createFromSelector: function( selector, clazz, targetCollection, additionalParams ) {
-        var collection = targetCollection || [];
-        $(selector).each( function() {
-            try {
-                collection.push( clazz.create( $(this), additionalParams ) );
-            }catch( err ) {
-                console.log( "Error creating entity " + clazz + " from :[" + $(this).attr('id') + "] : " + err.message );
+            if (typeof obj._constructor !== 'undefined') {
+                obj._constructor.apply(obj, Array.prototype.slice.call(arguments, 2));
             }
-        });
-        return collection;
-    }
-};
+            return obj;
+        }
+    };
 
 }());
 
@@ -94,7 +87,7 @@ test.OO = {
  * Main Application logic
  *===============================================================*/
 
-test.delivery.App = (function($){
+test.delivery.App = (function ($) {
 
     var depot,
         trucks = [],
@@ -106,29 +99,31 @@ test.delivery.App = (function($){
     */
     function _run() {
         //create depot and trucks
-        depot = test.delivery.Depot.create( $('.depot') );
-        test.OO.createFromSelector( '.delivery-truck', test.delivery.Truck, trucks, depot );
+        depot = test.delivery.Depot.create($('.depot'));
+        $('.delivery-truck').each(function () {
+            trucks.push(test.delivery.Truck.create($(this), depot));
+        });
 
         //signal that this app is ready. this will give a chance tu external module
         //to plug-in other functionalities (such as adding new behavior)
         //the subscribers will receive the handle of this App as the callback parameter
-        test.events.AppInited.publish( this );
+        test.events.AppInited.publish(this);
 
-        tash.each( trucks, function( truck, index ) {
+        tash.each(trucks, function (truck /*, index*/) {
             //create a logger for this truck
-            loggers.push( test.delivery.TruckLogger.create( truck ) );
+            loggers.push(test.delivery.TruckLogger.create(truck));
 
             //the purpose of this setTimeout is just to
             //start the tracks at different moments in time. nothing more than this
-            setTimeout( function(){
+            setTimeout(function () {
                 truck.deliver();
-            }, test.util.rand(1000,4000) );
-        } );
+            }, test.util.rand(1000, 4000));
+        });
     }
 
     return {
         run: _run,
-        getTrucks: function() { return trucks; }
+        getTrucks: function () { return trucks; }
     };
 }(jQuery));
 
@@ -137,10 +132,9 @@ test.delivery.App = (function($){
 * Model a geometrical entity with a 2D position in space
 */
 test.delivery.BaseEntity = {
-    create: function( source ){
+    create: function (source) {
         var id,
-            position,
-            self;
+            position;
 
         function _getName() {
             return id;
@@ -154,10 +148,6 @@ test.delivery.BaseEntity = {
             return "name(" + id + ")";
         }
 
-        function _setPosition( pos ) {
-            position = pos;
-        }
-
         /* position of buildings is supposed to be fixed, so no reason
         * to recompute it at every call. thus, it will be fetched only
         * at initialization time
@@ -169,12 +159,12 @@ test.delivery.BaseEntity = {
                 y: pos.top,
                 width: source.width(),
                 height: source.height()
-            }
+            };
         }
 
-        id = (source.attr('id')||source.attr('class'));
-        if( !source ) {
-            throw test.delivery.errors.create( test.delivery.errors.ENOARGS );
+        id = (source.attr('id') || source.attr('class'));
+        if (!source) {
+            throw test.delivery.errors.create(test.delivery.errors.ENOARGS);
         }
 
         initPosition();
@@ -193,8 +183,8 @@ test.delivery.BaseEntity = {
  * Model a generic building
  */
 test.delivery.Building = {
-    create: function( source ) {
-        var self = test.OO.extend( test.delivery.BaseEntity.create(source), {} );
+    create: function (source) {
+        var self = test.OO.extend(test.delivery.BaseEntity.create(source), {});
         return self;
     }
 };
@@ -204,13 +194,15 @@ test.delivery.Building = {
  * Model a Depot (contains parcels to be delivered)
  */
 test.delivery.Depot = {
-    create: function( source ) {
-        var self = test.OO.extend( test.delivery.Building.create(source), {
-            getParcels: function() {
+    create: function (source) {
+        var self = test.OO.extend(test.delivery.Building.create(source), {
+            getParcels: function () {
                 //return parcels according to existing delivery addresses
-                return test.OO.createFromSelector( '.delivery-address', test.delivery.Building );
+                return test.OO.mapFromSelector('.delivery-address', function (/*item*/) {
+                    return test.delivery.Building.create();
+                });
             }
-        } );
+        });
         return self;
     }
 };
@@ -226,7 +218,7 @@ test.delivery.Depot = {
  *   a more complex algorithm for driving the truck.
  *   this way we can upgrade the driving engine without affecting the truck.
  */
-(function($){
+(function ($) {
 
     //-------------------------------------------------
     // private closure space, used for static functions
@@ -240,94 +232,94 @@ test.delivery.Depot = {
     }
 
     test.delivery.Truck = {
-        create: function( source, depot ) {
+        create: function (source, depot) {
             var parcels = [],            //parcel this truck will have to deliver
                 originalLocation,        //initial location of the truck
                 self,                    //the truck that we'll return from this create function call
                 id = nextTruckId(),        //unique ID for this truck
-                speed = test.util.rand( 3000, 6000 ), //speed of this truck
+                speed = test.util.rand(3000, 6000), //speed of this truck
                 driver;    //driver engine used. defaults to a basic jQuery animate engine
 
             //-------------------------------------
             // Internal private functions
             //-------------------------------------
             //return the name of the topic used from this truck to publish events (or create a new one)
-            function getQueue( name ) {
-                tash.events.require( 'test.events.truck_' + self.getName() );
-                if( name ) {
-                    tash.events.require( 'test.events.truck_' + self.getName() + (name ? '.' + name : '') );
+            function getQueue(name) {
+                tash.events.require('test.events.truck_' + self.getName());
+                if (name) {
+                    tash.events.require('test.events.truck_' + self.getName() + (name ? '.' + name : ''));
                 }
-                return name ? test.events['truck_' + self.getName() ][ name ] : test.events['truck_' + self.getName() ];
+                return name ? test.events['truck_' + self.getName()][name] : test.events['truck_' + self.getName()];
             }
 
             function acquireParcels() {
                 //drive to depot
-                logProgress( "acquiring parcels from depot " );
-                driver.driveTo( depot.getPosition(), function completed() {
+                logProgress("acquiring parcels from depot ");
+                driver.driveTo(depot.getPosition(), function completed() {
                     parcels = depot.getParcels();
-                    getQueue('parcelsAcquired').publish( [parcels] );
-                } );
+                    getQueue('parcelsAcquired').publish([parcels]);
+                });
             }
 
             /**
             * recursive function used to chain asynchronous events (parcel deliveries)
             */
-            function deliverParcel( parcels, index ) {
-                if( index >= parcels.length ) {
+            function deliverParcel(parcels, index) {
+                if (index >= parcels.length) {
                     //iteration complete. signal process completion
-                    getQueue( 'parcelsDelivered' ).publish( this );
+                    getQueue('parcelsDelivered').publish(this);
                     return;
                 }
 
-                logProgress( "delivering parcel to " + parcels[index].getName() );
+                logProgress("delivering parcel to " + parcels[index].getName());
 
-                driver.driveTo( parcels[index].getPosition(), function(){
-                    deliverParcel( parcels, index+1 );
-                }, this );
+                driver.driveTo(parcels[index].getPosition(), function () {
+                    deliverParcel(parcels, index + 1);
+                }, this);
             }
 
-            function logProgress( msg ) {
-                getQueue().publish( [self, msg ] );
+            function logProgress(msg) {
+                getQueue().publish([self, msg ]);
             }
 
             function initFiniteStateAutomaton() {
                 //register listeners for events
-                getQueue( 'parcelsNotAcquired' ).subscribe( function() {
-                    logProgress( "nothing to deliver");
+                getQueue('parcelsNotAcquired').subscribe(function () {
+                    logProgress("nothing to deliver");
                     //transition to deliveryCompleted.
                     getQueue('deliveryCompleted').publish();
-                } );
+                });
 
-                getQueue( 'parcelsAcquired' ).subscribe( function( parcels ) {
-                    logProgress( "acquired " + parcels.length + " parcels from depot." +
-                                            (parcels.length >0 ? " ready for delivery" : "nothing to deliver") );
+                getQueue('parcelsAcquired').subscribe(function (parcels) {
+                    logProgress("acquired " + parcels.length + " parcels from depot." +
+                                            (parcels.length > 0 ? " ready for delivery" : "nothing to deliver"));
                     //start delivering the parcels, starting from the first one
-                    deliverParcel( parcels, 0 );
-                } );
+                    deliverParcel(parcels, 0);
+                });
 
-                getQueue( 'parcelsDelivered' ).subscribe( function() {
+                getQueue('parcelsDelivered').subscribe(function () {
                     getQueue('deliveryCompleted').publish();
-                } );
+                });
 
-                getQueue( 'deliveryCompleted' ).subscribe( function() {
+                getQueue('deliveryCompleted').subscribe(function () {
                     //get back to base
-                    logProgress( "back to base");
-                    driver.driveTo( originalLocation, function(){
-                        logProgress( "delivery completed" );
-                    } );
-                } );
+                    logProgress("back to base");
+                    driver.driveTo(originalLocation, function () {
+                        logProgress("delivery completed");
+                    });
+                });
             }
 
             //---------------------------------------------
             // privileged API functions
             //---------------------------------------------
             function _deliver() {
-                logProgress( 'Starting delivering' );
+                logProgress('Starting delivering');
                 acquireParcels();
             }
 
-            function _setDriver( truckDriver ) {
-                if( truckDriver && typeof truckDriver.driveTo === 'function' ) {
+            function _setDriver(truckDriver) {
+                if (truckDriver && typeof truckDriver.driveTo === 'function') {
                     driver = truckDriver;
                     return true;
                 }
@@ -341,36 +333,36 @@ test.delivery.Depot = {
             //default driver used to drive the truck
             driver = {
                 //move to a specific destination in space
-                driveTo: function( pos, completeCB, scope ) {
+                driveTo: function (pos, completeCB, scope) {
                     //Look for a registered driving engine. to be done in phase 2
 
                     //by now, it's just a simple jQuery animate call
-                    $(source).animate( {
+                    $(source).animate({
                         left: pos.x - (self.getPosition().width),
                         top: pos.y
                     }, speed, function complete() {
                         //if a complete callback is provided, let's call it
-                        if( typeof completeCB === 'function' ) {
-                            completeCB.call( scope||this );
+                        if (typeof completeCB === 'function') {
+                            completeCB.call(scope || this);
                         }
                     });
                 }
             };
 
-            self = test.OO.extend( test.delivery.BaseEntity.create(source), {
-                _constructor: function(source) {
+            self = test.OO.extend(test.delivery.BaseEntity.create(source), {
+                _constructor: function (/*source*/) {
                     originalLocation = this.getPosition();
                     originalLocation.x = originalLocation.x + this.getPosition().width;
                 },
 
                 /* @override getName, returning the ID of this truck */
-                getName: function(){
+                getName: function () {
                     return id;
                 },
 
                 deliver: _deliver,
                 setDriver: _setDriver
-            }, source );
+            }, source);
 
             self.el = source;
 
@@ -386,7 +378,7 @@ test.delivery.Depot = {
  * very basic exception classes
  */
 test.delivery.errors = {
-    create: function( errId ) {
+    create: function (errId) {
         return {
             id: errId,
             message: this[errId]
@@ -400,43 +392,39 @@ test.delivery.errors = {
  * This guy will be used to log messages coming from the truck to a panel
  */
 test.delivery.TruckLogger = {
-    create: function( truck, containerEl ) {
+    create: function (truck, containerEl) {
         var loggerEl;
 
-        function _log( msg ) {
-
-        }
-
-        if( !containerEl ) {
+        if (!containerEl) {
             containerEl = $(document.body);
         }
 
-        loggerEl = $( test.util.Screen.template( this.templates.logger, { id: truck.getName(), bgcolor: truck.el.css('background-color') } ) );
-        containerEl.append( loggerEl );
+        loggerEl = $(test.util.Screen.template(this.templates.logger, {id: truck.getName(), bgcolor: truck.el.css('background-color')}));
+        containerEl.append(loggerEl);
         loggerEl = loggerEl.find('.section');
 
-        tash.events.require( 'test.events.truck_' + truck.getName() );
+        tash.events.require('test.events.truck_' + truck.getName());
 
-        test.events['truck_' + truck.getName()].subscribe( function( truck, message ) {
+        test.events['truck_' + truck.getName()].subscribe(function (truck, message) {
             //clear active element from the panel
-            $('p.last', loggerEl ).removeClass('last');
+            $('p.last', loggerEl).removeClass('last');
             //loggerEl.prepend( "<p class='last'>" + message + "</p>" );
-            loggerEl.append( "<p class='last'>" + message + "</p>" );
-        } );
+            loggerEl.append("<p class='last'>" + message + "</p>");
+        });
 
+        //no exposed API for the logger
         return {
-            log: _log
         };
     }
 };
 
 test.delivery.TruckLogger.templates = {
     logger: [
-            "<div class='truck_logger' id='truck_logger_{{id}}'>",
-                "<h1>Events from Truck {{id}} <span class='icon' style='background-color:{{bgcolor}}'>&nbsp;</span></h1>",
-                "<div class='section'></div>",
-            "</div>"
-            ].join('')
+        "<div class='truck_logger' id='truck_logger_{{id}}'>",
+        "   <h1>Events from Truck {{id}} <span class='icon' style='background-color:{{bgcolor}}'>&nbsp;</span></h1>",
+        "   <div class='section'></div>",
+        "</div>"
+    ].join('')
 };
 
 
@@ -444,7 +432,7 @@ test.delivery.TruckLogger.templates = {
  * MAIN LOGIC
  *----------------------------------------------*/
 
-jQuery(document).ready( function(){
+jQuery(document).ready(function () {
     test.delivery.App.run();
 
-} );
+});
