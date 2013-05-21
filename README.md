@@ -7,6 +7,7 @@ This is code I had to write for a technical interview. I was asked to model a sc
 The code uses Prototypal inheritance; Object instances extends other objects instances through the prototype chain.
 
 The result is the code that follow.
+Don't expect to see a formally structured code here: no jake/grunt file, no minification or build stage in place; not even multiple files. It's just a fiddle/hack for a tech interview and, as such, a single html+js file will suffice :)
 
 The code can also be inspected as a fiddle [here](http://jsfiddle.net/np27n/8/embedded/result/). (See [here](http://jsfiddle.net/np27n/8/) for playing with the code. - Note:it's not kept in synch with the project though)
 
@@ -17,7 +18,7 @@ The code can also be inspected as a fiddle [here](http://jsfiddle.net/np27n/8/em
 
 ## Reactive Components and Event bus ##
 
-This example leverages the concept of reactive components. A system made of reactive components take advantage of loose coupling and it's thus resilient to change and easy to extend and test in isolation.
+This example leverages the concept of reactive components. A system made of reactive components takes advantage of loose coupling and it's thus resilient to change and easy to extend and test in isolation.
 
 The 2 logger panels on the far right of the screen are an example. They subscribe to log events published from the trucks and thus provide a status update on what each truck is doing:
 

@@ -77,6 +77,14 @@ tash.events.require('test.events.AppInited');
                 obj._constructor.apply(obj, Array.prototype.slice.call(arguments, 2));
             }
             return obj;
+        },
+
+        mapFromSelector: function( selector, builder ) {
+            var collection = [];
+            $(selector).each( function(idx, node) {
+                collection.push( builder(node) );
+            });
+            return collection;
         }
     };
 
@@ -198,8 +206,8 @@ test.delivery.Depot = {
         var self = test.OO.extend(test.delivery.Building.create(source), {
             getParcels: function () {
                 //return parcels according to existing delivery addresses
-                return test.OO.mapFromSelector('.delivery-address', function (/*item*/) {
-                    return test.delivery.Building.create();
+                return test.OO.mapFromSelector('.delivery-address', function (item) {
+                    return test.delivery.Building.create($(item));
                 });
             }
         });
