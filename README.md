@@ -9,7 +9,7 @@ The code uses Prototypal inheritance; Object instances extends other objects ins
 The result is the code that follow.
 Don't expect to see a formally structured code here: no jake/grunt file, no minification or build stage in place; not even multiple files. It's just a fiddle/hack for a tech interview and, as such, a single html+js file will suffice :)
 
-The code can also be inspected as a fiddle [here](http://jsfiddle.net/np27n/9/embedded/result/). (See [here](http://jsfiddle.net/np27n/9/) for playing with the code. - Note:it's not kept in synch with the project though)
+The code can also be inspected as a fiddle [here](http://jsfiddle.net/dmolin/np27n/12/show/). (See [here](http://jsfiddle.net/np27n/12/) for playing with the code. - Note:it's not kept in synch with the project though)
 
 ## Technologies Used ##
 
